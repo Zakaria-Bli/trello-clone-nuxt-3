@@ -30,7 +30,7 @@ function deleteColumn(columnIndex) {
   boardStore.deleteColumn(columnIndex)
 }
 
-function dropItem(event, toColumnIndex) {
+function dropItem(event, { toColumnIndex, toTaskIndex }) {
   const type = event.dataTransfer.getData("type")
   const fromColumnIndex = event.dataTransfer.getData("from-column-index")
 
@@ -38,7 +38,8 @@ function dropItem(event, toColumnIndex) {
     const fromTaskIndex = event.dataTransfer.getData("from-task-index")
 
     boardStore.moveTask({
-      taskIndex: fromTaskIndex,
+      fromTaskIndex,
+      toTaskIndex,
       fromColumnIndex,
       toColumnIndex,
     })
@@ -57,7 +58,6 @@ function goToTask(taskId) {
 function pickupColumn(event, fromColumnIndex) {
   event.dataTransfer.effectAllowed = "move"
   event.dataTransfer.dropEffect = "move"
-  event.dataTransfer.setData("type", "task")
   event.dataTransfer.setData("type", "column")
   event.dataTransfer.setData("from-column-index", fromColumnIndex)
 }
@@ -65,6 +65,7 @@ function pickupColumn(event, fromColumnIndex) {
 function pickupTask(event, { fromColumnIndex, fromTaskIndex }) {
   event.dataTransfer.effectAllowed = "move"
   event.dataTransfer.dropEffect = "move"
+  event.dataTransfer.setData("type", "task")
   event.dataTransfer.setData("from-column-index", fromColumnIndex)
   event.dataTransfer.setData("from-task-index", fromTaskIndex)
 }
@@ -73,11 +74,11 @@ function pickupTask(event, { fromColumnIndex, fromTaskIndex }) {
 <template>
   <UContainer
     class="column"
-    @dragenter.prevent
-    @dragover.prevent
-    @drop.stop="dropItem($event, columnIndex)"
     draggable="true"
     @dragstart.self="pickupColumn($event, columnIndex)"
+    @dragenter.prevent
+    @dragover.prevent
+    @drop.stop="dropItem($event, { toColumnIndex: columnIndex })"
   >
     <div class="column-header mb-4">
       <div>
@@ -98,7 +99,7 @@ function pickupTask(event, { fromColumnIndex, fromTaskIndex }) {
       </div>
     </div>
     <ul>
-      <li v-for="task in column.tasks" :key="task.id">
+      <li v-for="(task, taskIndex) in column.tasks" :key="task.id">
         <UCard
           class="mb-4"
           @click="goToTask(task.id)"
@@ -107,6 +108,12 @@ function pickupTask(event, { fromColumnIndex, fromTaskIndex }) {
             pickupTask($event, {
               fromColumnIndex: columnIndex,
               fromTaskIndex: taskIndex,
+            })
+          "
+          @drop.stop="
+            dropItem($event, {
+              toColumnIndex: columnIndex,
+              toTaskIndex: taskIndex,
             })
           "
         >
